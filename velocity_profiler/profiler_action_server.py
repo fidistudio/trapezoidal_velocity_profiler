@@ -6,7 +6,7 @@ from nav_msgs.msg import Odometry
 from velocity_profiler_interfaces.action import Move2D
 import math
 import time
-from tf_transformations import euler_from_quaternion
+from scipy.spatial.transform import Rotation as R
 
 
 def wrap_angle(angle: float) -> float:
@@ -49,7 +49,8 @@ class VelocityProfilerAction(Node):
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
-        _, _, self.yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
+        rot = R.from_quat([q.x, q.y, q.z, q.w])
+        self.yaw = rot.as_euler("xyz")[2]
 
     def goal_callback(self, goal_request) -> GoalResponse:
         self.get_logger().info("Goal accepted")

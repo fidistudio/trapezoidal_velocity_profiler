@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from geometry_msgs.msg import PoseStamped
 from velocity_profiler_interfaces.action import Move2D
-from tf_transformations import euler_from_quaternion
+from scipy.spatial.transform import Rotation as R
 
 
 class GoalPoseBridge(Node):
@@ -31,7 +31,7 @@ class GoalPoseBridge(Node):
         # Cancel previous goal if exists
         if self.current_goal_handle is not None:
             self.get_logger().info("Canceling previous goal")
-            self.action_client.cancel_goal_async(self.current_goal_handle)
+            self.action_client._cancel_goal_async(self.current_goal_handle)
 
         # Prepare new goal
         goal = Move2D.Goal()
@@ -39,8 +39,9 @@ class GoalPoseBridge(Node):
         goal.y = msg.pose.position.y
 
         q = msg.pose.orientation
-        _, _, yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
-        goal.theta = yaw
+        rot = R.from_quat([q.x, q.y, q.z, q.w])
+        self.yaw = rot.as_euler("xyz")[2]
+        goal.theta = self.yaw
 
         self.get_logger().info(
             f"New goal received: x={goal.x:.2f}, y={goal.y:.2f}, theta={goal.theta:.2f}"
